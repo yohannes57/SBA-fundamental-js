@@ -152,7 +152,7 @@ function getLearnerData(course, ag, submissions) {
 
     // Calculate average scores for each learner
     for (const learnerId in learnerData) {
-      const learner = learnerData[learnerId];
+      let learner = learnerData[learnerId];
       learner.avg = learner.totalScore / learner.totalWeight;
       delete learner.totalScore;
       // Remove totalScore,cause once we calculate the avg ,we dont need any more
@@ -161,7 +161,7 @@ function getLearnerData(course, ag, submissions) {
     }
 
     // Convert learnerData object to an array and format as it needed
-    const result = Object.values(learnerData).map((learner) => {
+    let result = Object.values(learnerData).map((learner) => {
       const formattedLearner = {
         id: learner.id,
         avg: Number(learner.avg.toFixed(3)),
@@ -186,23 +186,33 @@ const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
 
 console.log(result);
 
+//************************** */
+/* ***********************my result : 
+ [
+  { '1': 0.94, '2': 1, '3': 0.8, id: 125, avg: 0.853 },
+  { '1': 0.78, '2': 0.833, id: 132, avg: 0.82 }
+]               
+ */
 //**************************************** */
-// const result = [
-//   {
-//     id: 125,
-//     avg: 0.985, // (47 + 150) / (50 + 150)
-//     1: 0.94, // 47 / 50
-//     2: 1.0, // 150 / 150
-//   },
-//   {
-//     id: 132,
-//     avg: 0.82, // (39 + 125) / (50 + 150)
-//     1: 0.78, // 39 / 50
-//     2: 0.833, // late: (140 - 15) / 150
-//   },
-// ];
+// *********************exepected result******
 /*
-the final result looks like this:
+[
+  {
+    id: 125,
+    avg: 0.985, // (47 + 150) / (50 + 150)
+    1: 0.94, // 47 / 50
+    2: 1.0, // 150 / 150
+  },
+  {
+    id: 132,
+    avg: 0.82, // (39 + 125) / (50 + 150)
+    1: 0.78, // 39 / 50
+    2: 0.833, // late: (140 - 15) / 150
+  },
+];
+*/
+/*
+the final expected result looks like this:
 [
   { '1': 0.94, '2': 1, id: 125, avg: 0.985 },
   { '1': 0.78, '2': 0.833, id: 132, avg: 0.82 }
