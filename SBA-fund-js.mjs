@@ -4,7 +4,6 @@ const CourseInfo = {
   id: 451,
   name: "Introduction to JavaScript",
 };
-
 // The provided assignment group.
 const AssignmentGroup = {
   id: 12345,
@@ -32,7 +31,6 @@ const AssignmentGroup = {
     },
   ],
 };
-
 // The provided learner submission data.
 const LearnerSubmissions = [
   {
@@ -78,78 +76,112 @@ const LearnerSubmissions = [
 ];
 
 function getLearnerData(course, ag, submissions) {
-  // here, we would process this data to achieve the desired result.
   try {
     const courseId = course.id;
-    console.log("courseId ..", courseId); //451
+
+    // Validate that the assignment group belongs to the course
+    if (ag.course_id !== courseId) {
+      throw new Error(
+        `Assignment group ${ag.id} does not belong to course ${courseId}`
+      );
+    }
+
     const assignments = ag.assignments;
+    const now = new Date();
 
-    console.log("..assignments ", assignments); //
-    //see value each param
-    // console.log("Course ID:", courseId); //451
-    // console.log("Assignment Group:", ag);
-    // console.log("Assignments:", assignments);
-
-    // Filter assignments by course ID
-    const courseAssignments = assignments.filter(
-      (assignment) => assignment.course_id === courseId
-    );
-    console.log("courseAssignments ... :", courseAssignments);
-
-    // Create an object to store learner data
+    // Filter by due date
+    const validAssignments = assignments.filter((assignment) => {
+      const dueDate = new Date(assignment.due_at);
+      return dueDate > now || ag.course_id === courseId;
+    });
+    // console.log(validAssignments, "..validAssignmetn");
+    // create object to hold the learner data
     const learnerData = {};
 
-    // Iterate over submissions to calculate scores for each learner and assignment
-    console.log("submissions ...", submissions);
     submissions.forEach((submission) => {
       const learnerId = submission.learner_id;
-      console.log("learnerId ...: ", learnerId);
-      const assignment = courseAssignments.find(
+      const assignment = validAssignments.find(
         (a) => a.id === submission.assignment_id
       );
-      console.log("assignemt ...", assignment);
-
+      // console.log(assignment,"...assignment")
+      // if assignment is empity ,it return nothing
       if (!assignment) return;
+
       const assignmentScore = submission.submission.score;
       const maxScore = assignment.points_possible;
-      const normalizedScore = assignmentScore / maxScore;
 
-      console.log("assignmentScore ..:", assignmentScore);
-      console.log("maxScore ..: ", maxScore);
-      console.log("normalizedScore ..:" + normalizedScore);
+      //check the if the data are number,and not zero
+      if (
+        typeof assignmentScore !== "number" ||
+        typeof maxScore !== "number" ||
+        maxScore === 0
+      ) {
+        console.error(
+          `Invalid score data for assignment ${assignment.id} or learner ${learnerId}`
+        );
+        return;
+      }
 
+      //normalizedScore
+      let normalizedScore = assignmentScore / maxScore;
+
+      const dueDate = new Date(assignment.due_at);
+      const submittedDate = new Date(submission.submission.submitted_at);
+
+      //if submission late, 10% minus from the scor
+
+      if (submittedDate > dueDate) {
+        normalizedScore = Math.max(0, normalizedScore - 0.1);
+      }
+
+      //if learnerData has not value ,it will initialized here
       if (!learnerData[learnerId]) {
         learnerData[learnerId] = {
           id: learnerId,
           totalScore: 0,
-          completedAssignments: 0,
+          totalWeight: 0,
           scores: {},
           avg: 0,
         };
       }
 
-      learnerData[learnerId].totalScore += normalizedScore;
-      learnerData[learnerId].completedAssignments++;
+      learnerData[learnerId].totalScore += normalizedScore * maxScore;
+      learnerData[learnerId].totalWeight += maxScore;
       learnerData[learnerId].scores[assignment.id] = normalizedScore;
     });
 
     // Calculate average scores for each learner
     for (const learnerId in learnerData) {
       const learner = learnerData[learnerId];
-      learner.avg = learner.totalScore / learner.completedAssignments;
-      delete learner.totalScore; // Remove intermediate totalScore property
+      learner.avg = learner.totalScore / learner.totalWeight;
+      delete learner.totalScore;
+      // Remove totalScore,cause once we calculate the avg ,we dont need any more
+      delete learner.totalWeight;
+      // the same as totalScore ,it doesnt needed any more
     }
 
-    // Convert learnerData object to an array
-    const result = Object.values(learnerData);
+    // Convert learnerData object to an array and format as it needed
+    const result = Object.values(learnerData).map((learner) => {
+      const formattedLearner = {
+        id: learner.id,
+        avg: Number(learner.avg.toFixed(3)),
+      };
 
+      for (const [assignmentId, score] of Object.entries(learner.scores)) {
+        formattedLearner[Number(assignmentId)] = Number(score.toFixed(3));
+      }
+
+      return formattedLearner;
+    });
+
+    //console.log(result,"...result")
     return result;
   } catch (error) {
     console.error("An error occurred while processing learner data:", error);
-    return []; // Return an empty array in case of an error
+    //return empty array
+    return [];
   }
 }
-
 const result = getLearnerData(CourseInfo, AssignmentGroup, LearnerSubmissions);
 
 console.log(result);
